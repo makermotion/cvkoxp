@@ -24,6 +24,14 @@ class Agent:
         self.window_info = {}
         win32gui.EnumWindows(self.set_window_coordinates, self.window_info)
 
+    @staticmethod
+    def get_screen(x1, y1, x2, y2):
+            box = (x1, y1, x2, y2)
+            screen = ImageGrab.grab(box)
+            #print(screen.size)
+            img = np.array(screen.getdata(), dtype=np.uint8).reshape((screen.size[1], screen.size[0], 3))
+            return img
+
     def set_target(self):
         if self.state == 'init' or self.state == 'onhold' or self.state == 'toofar':
             self.ahk.key_press('z')
@@ -46,14 +54,6 @@ class Agent:
                     win32gui.SetForegroundWindow(hwnd)
 
     def check_target(self, monster):
-        
-        def get_screen(x1, y1, x2, y2):
-            box = (x1, y1, x2, y2)
-            screen = ImageGrab.grab(box)
-            #print(screen.size)
-            img = np.array(screen.getdata(), dtype=np.uint8).reshape((screen.size[1], screen.size[0], 3))
-            return img
-        
         x1, y1, x2, y2 = self.window_info['x'], self.window_info['y'], self.window_info['width'], self.window_info['height']
         cut_w = x2 / 2
         cut_re  = 110 
@@ -94,14 +94,6 @@ class Agent:
 
 
     def check_stats(self, stat_name):
-        
-        def get_screen(x1, y1, x2, y2):
-            box = (x1, y1, x2, y2)
-            screen = ImageGrab.grab(box)
-            #print(screen.size)
-            img = np.array(screen.getdata(), dtype=np.uint8).reshape((screen.size[1], screen.size[0], 3))
-            return img
-
         if stat_name == 'hp':
             x1, y1, x2, y2 = 124, 49, 196, 61
         if stat_name == 'mp':
@@ -135,13 +127,6 @@ class Agent:
         return int(text[0][0]), int(text[1][0])
 
     def check_toofar(self):
-        def get_screen(x1, y1, x2, y2):
-            box = (x1, y1, x2, y2)
-            screen = ImageGrab.grab(box)
-            #print(screen.size)
-            img = np.array(screen.getdata(), dtype=np.uint8).reshape((screen.size[1], screen.size[0], 3))
-            return img
-
         x1, y1, x2, y2 = 1532, 955, 1871, 977 
 
         img = get_screen(x1, y1, x2, y2)
@@ -203,7 +188,6 @@ class Agent:
     def active_win(self):
         return self.ahk.active_window
     
-    
     def verify(self):
         pass
 
@@ -213,92 +197,91 @@ def is_admin():
     except:
         return False
 
+def cont_attack(stop, attack_type):
+    while True:
+        try:
+            active_window = bot.active_win().title.decode('utf-8')
+            if 'Knight OnLine Client' in str(active_window):
+                time.sleep(.05)
+                bot.attack(attack_type)
+            if stop():
+                break
+        except Exception as e:
+            print(e)
+
+def check_target(monster, stop):
+    while True:
+        try:
+            bot.check_toofar()
+            bot.check_target(monster)
+            if stop():
+                break
+        except Exception as e:
+            print(e)
+
+def reccurent_skills(key, stop, t=None):
+    while True:
+        try:
+            active_window = bot.active_win().title.decode('utf-8')
+            if 'Knight OnLine Client' in str(active_window):
+                if t != None:
+                    bot.recurrent(str(key))
+                    time.sleep(t)
+                else:
+                    bot.recurrent(str(key))
+        except Exception as e:
+            print(e)
+        if stop():
+            break
+
+
 if __name__  == '__main__':
-        if is_admin():
-            bot = Agent()
-            def cont_attack(stop, attack_type):
-                while True:
-                    try:
-                        active_window = bot.active_win().title.decode('utf-8')
-                        if 'Knight OnLine Client' in str(active_window):
-                            time.sleep(.05)
-                            bot.attack(attack_type)
-                        if stop():
-                            break
-                    except Exception as e:
-                        print(e)
+    if is_admin():
+        bot = Agent()
 
-            def check_target(monster, stop):
-               while True:
-                    try:
-                        bot.check_toofar()
-                        bot.check_target(monster)
-                        if stop():
-                           break
-                    except Exception as e:
-                        print(e)
+        def bot_control():
+            while True:
+                action = input('Aksiyon Gir:')
 
-            def reccurent_skills(key, stop, t=None):
-                while True:
-                    try:
-                        active_window = bot.active_win().title.decode('utf-8')
-                        if 'Knight OnLine Client' in str(active_window):
-                            if t != None:
-                                bot.recurrent(str(key))
-                                time.sleep(t)
-                            else:
-                                bot.recurrent(str(key))
-                    except Exception as e:
-                        print(e)
-                    if stop():
-                        break
-            
-
-            def bot_control():
-                while True:
-                    action = input('Aksiyon Gir:')
-
-                    if action == 'att start':
-                        att_stop = False
-                        ct_stop = False
-                        cht_stop = False
-                        monster = input('Select target monster: ')
-                        attack_type = input('Select attack type: "skill number": ')
-                        att = Thread(target=cont_attack, args= [lambda: att_stop, attack_type])
-                        ct = Thread(target=check_target, args = [monster, lambda: ct_stop])
-                        ct = Thread(target=check_target, args = [monster, lambda: ct_stop])
-                        ct.start() 
-                        att.start()
-                    if action == 'att stop':
-                        att_stop = True
-                        ct_stop = True
-                        att.join()
-                        ct.join()
-                    if action == 'lf start':
-                        lf_stop = False
-                        lf = Thread(target=reccurent_skills, args=[6, lambda: lf_stop])
-                        lf.start()
-                    if action == 'lf stop':
-                        lf_stop = True
-                        lf.join()
-                    if action == 'wolf start':
-                        wolf_stop = False
-                        wolf = Thread(target=reccurent_skills, args=[8, lambda: wolf_stop, 121])
-                        wolf.start()
-                    if action == 'wolf stop':
-                        wolf_stop = True
-                        wolf.join()
-                    if action == 'safety start':
-                        safety_stop = False
-                        safety = Thread(target=reccurent_skills, args=[7, lambda: safety_stop])
-                        safety.start()
-                    if action == 'safety stop':
-                        safety_stop = True
-                        safety.join()
-                    
-            bc = Thread(target=bot_control)
-            bc.start()
-        else:
-            # Re-run the program with admin rights
-            ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, " ".join(sys.argv), None, 1)
-    
+                if action == 'att start':
+                    att_stop = False
+                    ct_stop = False
+                    cht_stop = False
+                    monster = input('Select target monster: ')
+                    attack_type = input('Select attack type: "skill number": ')
+                    att = Thread(target=cont_attack, args= [lambda: att_stop, attack_type])
+                    ct = Thread(target=check_target, args = [monster, lambda: ct_stop])
+                    ct.start() 
+                    att.start()
+                if action == 'att stop':
+                    att_stop = True
+                    ct_stop = True
+                    att.join()
+                    ct.join()
+                if action == 'lf start':
+                    lf_stop = False
+                    lf = Thread(target=reccurent_skills, args=[6, lambda: lf_stop])
+                    lf.start()
+                if action == 'lf stop':
+                    lf_stop = True
+                    lf.join()
+                if action == 'wolf start':
+                    wolf_stop = False
+                    wolf = Thread(target=reccurent_skills, args=[8, lambda: wolf_stop, 121])
+                    wolf.start()
+                if action == 'wolf stop':
+                    wolf_stop = True
+                    wolf.join()
+                if action == 'safety start':
+                    safety_stop = False
+                    safety = Thread(target=reccurent_skills, args=[7, lambda: safety_stop])
+                    safety.start()
+                if action == 'safety stop':
+                    safety_stop = True
+                    safety.join()
+                
+        bc = Thread(target=bot_control)
+        bc.start()
+    else:
+        # Re-run the program with admin rights
+        ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, " ".join(sys.argv), None, 1)
