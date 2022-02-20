@@ -5,6 +5,7 @@
 ## Environment
 - python3.9
 - install requirements.txt (pip)
+- In game UI has to be scaled up to 1.3 in Options > Game Option1 menu.
 
 ## Possible Actions:
 - att start
