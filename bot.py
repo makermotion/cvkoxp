@@ -20,7 +20,7 @@ class Agent:
         self.full_hp = None
         self.full_mp = None
         self.target_monster = False
-        pytesseract.pytesseract.tesseract_cmd = r'C:/Program Files/tess4/tesseract.exe'
+        pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
         self.window_info = {}
         win32gui.EnumWindows(self.set_window_coordinates, self.window_info)
 
@@ -61,7 +61,7 @@ class Agent:
 
         x1 = x1 + cut_w - cut_re
         x2 = x1 + (cut_re * 2)
-        img = get_screen(x1, y1+10, x2, y2-cut_h)
+        img = Agent.get_screen(x1, y1+10, x2, y2-cut_h)
 
         img = cv2.resize(img, (550, 150))
 
@@ -99,7 +99,7 @@ class Agent:
         if stat_name == 'mp':
             x1, y1, x2, y2 = 124, 71, 196, 81
 
-        img = get_screen(x1, y1, x2, y2)
+        img = Agent.get_screen(x1, y1, x2, y2)
         img = cv2.resize(img, (350, 55))
 
         img = cv2.copyMakeBorder(img, 10, 10, 0, 0, cv2.BORDER_CONSTANT, value=255)
@@ -129,7 +129,7 @@ class Agent:
     def check_toofar(self):
         x1, y1, x2, y2 = 1532, 955, 1871, 977 
 
-        img = get_screen(x1, y1, x2, y2)
+        img = Agent.get_screen(x1, y1, x2, y2)
         img = cv2.resize(img, (350, 55))
 
         #img = cv2.copyMakeBorder(img, 10, 10, 0, 0, cv2.BORDER_CONSTANT, value=255)
