@@ -6,6 +6,7 @@
 - python3.9
 - install requirements.txt (pip)
 - In game UI has to be scaled up to 1.3 in Options > Game Option1 menu.
+- only works with 1920x1080 res.
 
 ## Possible Actions:
 - att start
