@@ -15,7 +15,7 @@ class Agent:
     def __init__(self):
         self.state = 'init'
         self.ahk = AHK()
-        self.win = self.ahk.find_window(title=b'Knight OnLine Client') # Find the opened window        
+        self.win = self.ahk.find_window(title='Knight OnLine Client')
         self.win.activate()        
         self.full_hp = None
         self.full_mp = None
@@ -28,7 +28,6 @@ class Agent:
     def get_screen(x1, y1, x2, y2):
             box = (x1, y1, x2, y2)
             screen = ImageGrab.grab(box)
-            #print(screen.size)
             img = np.array(screen.getdata(), dtype=np.uint8).reshape((screen.size[1], screen.size[0], 3))
             return img
 
@@ -53,6 +52,7 @@ class Agent:
                     window_info['name'] = win32gui.GetWindowText(hwnd)
                     win32gui.SetForegroundWindow(hwnd)
 
+
     def check_target(self, monster):
         x1, y1, x2, y2 = self.window_info['x'], self.window_info['y'], self.window_info['width'], self.window_info['height']
         cut_w = x2 / 2
@@ -62,31 +62,22 @@ class Agent:
         x1 = x1 + cut_w - cut_re
         x2 = x1 + (cut_re * 2)
         img = Agent.get_screen(x1, y1+10, x2, y2-cut_h)
-
         img = cv2.resize(img, (550, 150))
-
         img = cv2.copyMakeBorder(img, 10, 10, 0, 0, cv2.BORDER_CONSTANT, value=255)
-
+        imagesave = Image.fromarray(img, mode="RGB")
+        imagesave.save("image.png")
         gray = cv2.cvtColor(np.asarray(img), cv2.COLOR_BGR2GRAY)
-        #Image.fromarray(gray).show()
         
         # Performing OTSU threshold
+        _, thresh2 = cv2.threshold(gray, 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY)
+        _, thresh1 = cv2.threshold(gray, 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)
         
-        ret, thresh2 = cv2.threshold(gray, 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY)
-        
-        ret, thresh1 = cv2.threshold(gray, 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)
-        
-        #Image.fromarray(thresh1).show()
         config = ('-l eng --oem 1 --psm 3')
 
-        # pytessercat
-        # pytesseract.pytesseract.tesseract_cmd = r'C:/Program Files/tess4/tesseract.exe'
         text1 = pytesseract.image_to_string(thresh1, config=config).lower().strip()
-
         text2 = pytesseract.image_to_string(thresh2, config=config).lower().strip()
 
         assert type(monster) == str, "Not correct variable type for monster."
-        #print('SIMILARITIES', SequenceMatcher(None, monster, text1).ratio(), SequenceMatcher(None, monster, text2).ratio())
         if SequenceMatcher(None, monster, text1).ratio() > .5 or SequenceMatcher(None, monster, text2).ratio() > .5: 
             self.target_monster = True
         else:
@@ -101,29 +92,17 @@ class Agent:
 
         img = Agent.get_screen(x1, y1, x2, y2)
         img = cv2.resize(img, (350, 55))
-
         img = cv2.copyMakeBorder(img, 10, 10, 0, 0, cv2.BORDER_CONSTANT, value=255)
 
         gray = cv2.cvtColor(np.asarray(img), cv2.COLOR_BGR2GRAY)
 
-        #Image.fromarray(gray).show()
-        # Performing OTSU threshold
-        ret, thresh1 = cv2.threshold(gray, 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)
-        #ret, thresh1 = cv2.threshold(gray, 0, 255, cv2.THRESH_OTSU)
-        
-        #Image.fromarray(thresh1).show()
+        _, thresh1 = cv2.threshold(gray, 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)
         config = ('-l eng --oem 1 --psm 3')
 
-        # pytessercat
-        
         text = pytesseract.image_to_string(thresh1, config=config)
-        #print(f'{stat_name} TEXT RESULT: {text}')
         text = text.split('/')
-        #print(f'before regex {text[0], text[1]} ')
         text[0] = re.findall('[0-9]+', text[0])
         text[1] = re.findall('[0-9]+', text[1])
-        #print(f'{stat_name.upper()} ACTUAL 1: {text[0]}')
-        #print(f'{stat_name.upper()} FULL 1: {text[1]}')
         return int(text[0][0]), int(text[1][0])
 
     def check_toofar(self):
@@ -131,21 +110,12 @@ class Agent:
 
         img = Agent.get_screen(x1, y1, x2, y2)
         img = cv2.resize(img, (350, 55))
-
-        #img = cv2.copyMakeBorder(img, 10, 10, 0, 0, cv2.BORDER_CONSTANT, value=255)
-
         gray = cv2.cvtColor(np.asarray(img), cv2.COLOR_BGR2GRAY)
 
-        #Image.fromarray(gray).show()
-        # Performing OTSU threshold
-        ret, thresh1 = cv2.threshold(gray, 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)
-        
-        #Image.fromarray(thresh1).show()
+        _, thresh1 = cv2.threshold(gray, 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)
         config = ('-l eng --oem 1 --psm 3')
 
-        # pytessercat       
         text = pytesseract.image_to_string(thresh1, config=config)
-        #print(f'{stat_name} TEXT RESULT: {text}')
 
         if 'too far' in text.lower() and self.state != 'toofar':
             self.state = 'toofar'
@@ -172,7 +142,7 @@ class Agent:
         self.state = 'attacking'
 
     def attack(self, attack_type):
-        #print(f'State = {self.state}')
+        print(f'State = {self.state}')
         if self.state == 'attacking':
             act_hp, shld_hp = self.check_stats('hp')
             act_mp, shld_mp = self.check_stats('mp')
@@ -200,7 +170,7 @@ def is_admin():
 def cont_attack(stop, attack_type):
     while True:
         try:
-            active_window = bot.active_win().title.decode('utf-8')
+            active_window = bot.active_win().title
             if 'Knight OnLine Client' in str(active_window):
                 time.sleep(.05)
                 bot.attack(attack_type)
@@ -222,7 +192,7 @@ def check_target(monster, stop):
 def reccurent_skills(key, stop, t=None):
     while True:
         try:
-            active_window = bot.active_win().title.decode('utf-8')
+            active_window = bot.active_win().title
             if 'Knight OnLine Client' in str(active_window):
                 if t != None:
                     bot.recurrent(str(key))
@@ -246,7 +216,6 @@ if __name__  == '__main__':
                 if action == 'att start':
                     att_stop = False
                     ct_stop = False
-                    cht_stop = False
                     monster = input('Select target monster: ')
                     attack_type = input('Select attack type: "skill number": ')
                     att = Thread(target=cont_attack, args= [lambda: att_stop, attack_type])
@@ -285,3 +254,4 @@ if __name__  == '__main__':
     else:
         # Re-run the program with admin rights
         ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, " ".join(sys.argv), None, 1)
+    
